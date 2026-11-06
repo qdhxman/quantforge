@@ -10,6 +10,8 @@
 > backtest them with realistic next-bar execution, inspect explainable signals on a dashboard, and
 > run an autonomous order loop that is **paper-first and guarded by 12 pre-trade risk rules**.
 
+🌐 **[在线交互看板 · 点开就能玩](https://quantforge-dashboard.app.workbuddy.host/?sharecode=BW7RIDSIEK)** — 浏览器里自由勾选因子、调权重和阈值、跑回测、看净值曲线与风控拦截，不需要安装任何东西，也不依赖后端。
+
 ---
 
 ## ⚠️ 先读这一段
