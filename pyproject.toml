@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quantforge"
+version = "0.1.0"
+description = "Factor-driven quantitative research, backtesting, decision support and guarded automated execution."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Xuman Hou (Frank)" }]
+keywords = ["quantitative trading", "backtesting", "factors", "risk management", "algorithmic trading"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Intended Audience :: Financial and Insurance Industry",
+  "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = []
+
+[project.optional-dependencies]
+api = ["fastapi>=0.110", "uvicorn>=0.27"]
+yaml = ["PyYAML>=6.0"]
+market = ["yfinance>=0.2.40"]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+
+[project.scripts]
+quantforge = "quantforge.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["quantforge*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

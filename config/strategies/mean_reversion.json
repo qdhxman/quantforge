@@ -1,0 +1,46 @@
+{
+  "name": "mean-reversion",
+  "description": "逆势组合：布林带 Z 值 + RSI + 隔夜反转；冷却 2 bar、拉黑 NVDA，用来观察风控拦截",
+  "symbols": ["AAPL", "MSFT", "NVDA", "SPY"],
+  "factors": [
+    { "name": "bollinger_z", "weight": 1.0, "params": { "period": 20 } },
+    { "name": "rsi", "weight": 0.9, "params": { "period": 14 } },
+    { "name": "reversal_1d", "weight": 0.5, "params": { "scale": 40 } },
+    { "name": "low_volatility", "weight": 0.4, "params": { "period": 20 } }
+  ],
+  "signal": {
+    "buy_threshold": 0.15,
+    "sell_threshold": -0.15,
+    "smoothing": 0.0,
+    "min_holding_bars": 2,
+    "combine_method": "weighted"
+  },
+  "backtest": {
+    "initial_cash": 100000.0,
+    "commission_bps": 5.0,
+    "slippage_bps": 5.0,
+    "lot_size": 1,
+    "min_order_value": 500.0,
+    "max_position_pct": 0.3,
+    "max_gross_exposure_pct": 0.9,
+    "allow_short": false
+  },
+  "risk": {
+    "max_order_notional": 25000.0,
+    "max_position_pct": 0.3,
+    "max_gross_exposure_pct": 0.9,
+    "max_daily_loss_pct": 0.02,
+    "max_drawdown_pct": 0.15,
+    "cooldown_bars": 2,
+    "blacklist": ["NVDA"],
+    "kill_switch": false,
+    "allow_short": false
+  },
+  "trading": {
+    "mode": "paper",
+    "poll_seconds": 60,
+    "journal_path": "logs/trading-journal.jsonl",
+    "order_type": "market",
+    "max_orders_per_cycle": 6
+  }
+}

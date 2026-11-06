@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuantForge · 因子驱动量化决策台</title>
+  <meta name="description" content="自由组合量化因子、回测、数据驱动信号与受风控约束的自动执行演示" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">QF</div>
+      <div>
+        <h1>QuantForge</h1>
+        <p>因子自由组合 · 回测验证 · 数据驱动信号 · 受控自动执行</p>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge badge-mode">模拟盘 PAPER</span>
+      <span class="badge">合成示例数据</span>
+      <span class="badge">v0.1.0</span>
+      <a class="badge badge-link" href="https://github.com/qdhxman/quantforge" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="panel">
+        <div class="panel-title">策略预设 <span class="hint">切换后点「运行回测」</span></div>
+        <select id="presetSelect" class="select">
+          <option value="momentum">动量组合 · Momentum Blend</option>
+          <option value="mean_reversion">均值回归 · Mean Reversion</option>
+          <option value="breakout">激进突破 · Aggressive Breakout</option>
+        </select>
+        <p class="preset-desc" id="presetDesc"></p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">① 选择因子 <span class="hint" id="factorCount"></span></div>
+        <div id="factorList" class="factor-list"></div>
+        <div class="row gap">
+          <button class="btn btn-ghost btn-sm" id="allFactors">全选</button>
+          <button class="btn btn-ghost btn-sm" id="clearFactors">清空</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">② 组合与信号</div>
+        <label class="field"><span>组合方式</span>
+          <select id="combineMethod" class="select">
+            <option value="weighted">加权平均 weighted</option>
+            <option value="majority">多数投票 majority</option>
+            <option value="min">最保守 min</option>
+            <option value="max">最激进 max</option>
+          </select>
+        </label>
+        <label class="field"><span>买入阈值 <b id="buyThresholdVal"></b></span>
+          <input type="range" id="buyThreshold" min="0.02" max="0.60" step="0.01" /></label>
+        <label class="field"><span>卖出阈值 <b id="sellThresholdVal"></b></span>
+          <input type="range" id="sellThreshold" min="-0.60" max="-0.02" step="0.01" /></label>
+        <label class="field"><span>得分平滑 EMA <b id="smoothingVal"></b></span>
+          <input type="range" id="smoothing" min="0" max="0.9" step="0.05" /></label>
+        <label class="field"><span>最短持仓 bar <b id="minHoldingVal"></b></span>
+          <input type="range" id="minHolding" min="0" max="10" step="1" /></label>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">③ 回测成本</div>
+        <label class="field"><span>初始资金 ¥</span><input type="number" id="initialCash" step="10000" min="1000" class="input" /></label>
+        <label class="field"><span>手续费 bps <b id="commissionBpsVal"></b></span>
+          <input type="range" id="commissionBps" min="0" max="30" step="1" /></label>
+        <label class="field"><span>滑点 bps <b id="slippageBpsVal"></b></span>
+          <input type="range" id="slippageBps" min="0" max="30" step="1" /></label>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">④ 风控硬闸 <span class="hint">下单前逐条检查</span></div>
+        <label class="toggle"><input type="checkbox" id="killSwitch" /><span>紧急停机 KILL SWITCH</span></label>
+        <div class="field"><span>标的黑名单</span><div id="blacklistBoxes" class="checkbox-row"></div></div>
+        <label class="field"><span>单票仓位上限 <b id="maxPositionPctVal"></b></span>
+          <input type="range" id="maxPositionPct" min="0.05" max="0.60" step="0.01" /></label>
+        <label class="field"><span>单笔金额上限 ¥</span><input type="number" id="maxOrderNotional" step="1000" min="1000" class="input" /></label>
+        <label class="field"><span>日内亏损熔断 <b id="maxDailyLossPctVal"></b></span>
+          <input type="range" id="maxDailyLossPct" min="0.01" max="0.20" step="0.01" /></label>
+        <label class="field"><span>回撤熔断 <b id="maxDrawdownPctVal"></b></span>
+          <input type="range" id="maxDrawdownPct" min="0.05" max="0.50" step="0.01" /></label>
+        <label class="field"><span>交易冷却 bar <b id="cooldownBarsVal"></b></span>
+          <input type="range" id="cooldownBars" min="0" max="10" step="1" /></label>
+      </div>
+
+      <div class="panel sticky-actions">
+        <button class="btn btn-primary" id="runBtn">▶ 运行回测</button>
+        <button class="btn btn-ghost" id="resetBtn">重置为预设</button>
+        <p class="tiny muted">全部计算在本机浏览器完成，不上传任何数据。</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="notice">
+        <strong>演示数据为程序生成的合成行情（含一段熊市区间），不是真实市场数据。</strong>
+        本页所有数字均由 <code>web/engine.js</code> 实时计算，与仓库 Python 内核经过数值一致性校验。
+        仅用于研究与教学，不构成投资建议。
+      </div>
+
+      <section class="kpi-grid" id="kpiGrid"></section>
+
+      <section class="card">
+        <div class="card-head">
+          <div><h2>净值曲线</h2><p class="sub">策略 vs 等权买入持有 · 次一日开盘成交，含手续费与滑点</p></div>
+          <div class="legend">
+            <span><i class="dot dot-strategy"></i>策略</span>
+            <span><i class="dot dot-bench"></i>等权买入持有</span>
+          </div>
+        </div>
+        <div class="chart-wrap" id="equityWrap">
+          <svg id="equityChart" viewBox="0 0 960 300" preserveAspectRatio="none" role="img" aria-label="净值曲线"></svg>
+          <div class="chart-tooltip" id="chartTooltip"></div>
+        </div>
+        <div class="chart-wrap chart-wrap-sm">
+          <svg id="drawdownChart" viewBox="0 0 960 110" preserveAspectRatio="none" role="img" aria-label="回撤曲线"></svg>
+        </div>
+        <p class="card-foot" id="tradeoffNote"></p>
+      </section>
+
+      <div class="two-col">
+        <section class="card">
+          <div class="card-head"><div><h2>因子贡献度</h2><p class="sub">回测期内各因子加权得分的累计绝对值占比</p></div></div>
+          <div id="factorImpact" class="impact-list"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><div><h2>最新信号 · 决策支持</h2><p class="sub" id="signalAsOf"></p></div></div>
+          <div class="table-scroll"><table class="table">
+            <thead><tr><th>标的</th><th>动作</th><th>综合得分</th><th>目标仓位</th><th>依据</th></tr></thead>
+            <tbody id="signalTableBody"></tbody>
+          </table></div>
+        </section>
+      </div>
+
+      <section class="card">
+        <div class="card-head">
+          <div><h2>自动执行 · 模拟盘</h2><p class="sub">同一套因子信号逐 bar 驱动下单，每笔委托先过 12 条风控规则</p></div>
+          <div class="row gap">
+            <label class="inline-label">周期 <input type="number" id="paperSteps" value="20" min="1" max="200" class="input input-sm" /></label>
+            <button class="btn btn-primary btn-sm" id="paperStartBtn">▶ 自动跑</button>
+            <button class="btn btn-ghost btn-sm" id="paperStepBtn">单步</button>
+            <button class="btn btn-danger btn-sm" id="paperHaltBtn">紧急停机</button>
+            <button class="btn btn-ghost btn-sm" id="paperResetBtn">重置</button>
+          </div>
+        </div>
+        <div class="paper-grid">
+          <div>
+            <div id="paperStatus" class="paper-status">待运行</div>
+            <div id="paperAccount" class="account-grid"></div>
+            <h3 class="mini-title">执行日志</h3>
+            <div id="paperLog" class="log-box"><p class="muted tiny">点击「自动跑」开始逐周期模拟。</p></div>
+          </div>
+          <div>
+            <h3 class="mini-title">最近一笔委托的风控检查</h3>
+            <div id="lastChecks" class="checks-box"><p class="muted tiny">尚无委托。</p></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="two-col">
+        <section class="card">
+          <div class="card-head"><div><h2>成交明细</h2><p class="sub" id="tradesCount"></p></div></div>
+          <div class="table-scroll"><table class="table">
+            <thead><tr><th>日期</th><th>标的</th><th>方向</th><th>数量</th><th>价格</th><th>已实现盈亏</th></tr></thead>
+            <tbody id="tradesBody"></tbody>
+          </table></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><div><h2>风控拦截记录</h2><p class="sub" id="blocksCount"></p></div></div>
+          <div class="table-scroll"><table class="table">
+            <thead><tr><th>日期</th><th>标的</th><th>方向</th><th>拦截规则</th><th>详情</th></tr></thead>
+            <tbody id="blocksBody"></tbody>
+          </table></div>
+        </section>
+      </div>
+
+      <footer class="footer">
+        QuantForge · MIT License · 计算内核与浏览器引擎均为零第三方依赖 ·
+        <strong>实盘下单默认关闭，需配置 + 环境变量 + 显式确认三重闸门</strong>
+      </footer>
+    </main>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script src="data.js"></script>
+<script src="presets.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

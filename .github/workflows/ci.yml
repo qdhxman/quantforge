@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install
+        run: pip install -e '.[dev,api,yaml]'
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Python / JavaScript engine parity
+        run: |
+          python scripts/verify_parity.py --out reports/python_reference.json
+          node scripts/verify_parity.js reports/python_reference.json
+      - name: Lint (non-blocking)
+        continue-on-error: true
+        run: ruff check quantforge tests examples scripts || true
+
+  web-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check generated web assets are in sync
+        run: |
+          pip install -e .
+          quantforge sample-data --out /tmp/data.js --csv /tmp/sample.csv
+          python - <<'PY'
+          import json, re, pathlib
+          def payload(p):
+              s = pathlib.Path(p).read_text(encoding="utf-8")
+              return json.loads(re.search(r'var d=(.*?);if\(typeof module', s, re.S).group(1))
+          a, b = payload('/tmp/data.js'), payload('web/data.js')
+          assert a["meta"] == b["meta"], "web/data.js meta out of sync"
+          assert a["data"] == b["data"], "web/data.js data out of sync; run: quantforge sample-data"
+          print("web assets in sync")
+          PY

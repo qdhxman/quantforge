@@ -1,0 +1,47 @@
+{
+  "name": "momentum-blend",
+  "description": "趋势跟随为主，叠加量能与低波确认；阈值稳健、带得分平滑与翻转滞后",
+  "symbols": ["AAPL", "MSFT", "NVDA", "SPY"],
+  "factors": [
+    { "name": "momentum", "weight": 1.0, "params": { "lookback": 20 } },
+    { "name": "ma_cross", "weight": 0.8, "params": { "fast": 10, "slow": 30 } },
+    { "name": "macd", "weight": 0.6, "params": {} },
+    { "name": "volume_spike", "weight": 0.4, "params": { "period": 20 } },
+    { "name": "low_volatility", "weight": 0.3, "params": { "period": 20 } }
+  ],
+  "signal": {
+    "buy_threshold": 0.18,
+    "sell_threshold": -0.18,
+    "smoothing": 0.25,
+    "min_holding_bars": 3,
+    "combine_method": "weighted"
+  },
+  "backtest": {
+    "initial_cash": 100000.0,
+    "commission_bps": 5.0,
+    "slippage_bps": 5.0,
+    "lot_size": 1,
+    "min_order_value": 500.0,
+    "max_position_pct": 0.35,
+    "max_gross_exposure_pct": 0.95,
+    "allow_short": false
+  },
+  "risk": {
+    "max_order_notional": 30000.0,
+    "max_position_pct": 0.35,
+    "max_gross_exposure_pct": 0.95,
+    "max_daily_loss_pct": 0.03,
+    "max_drawdown_pct": 0.2,
+    "cooldown_bars": 1,
+    "blacklist": [],
+    "kill_switch": false,
+    "allow_short": false
+  },
+  "trading": {
+    "mode": "paper",
+    "poll_seconds": 60,
+    "journal_path": "logs/trading-journal.jsonl",
+    "order_type": "market",
+    "max_orders_per_cycle": 10
+  }
+}
