@@ -12,6 +12,8 @@
 
 🌐 **[在线交互看板 · 点开就能玩](https://quantforge-dashboard.app.workbuddy.host/?sharecode=BW7RIDSIEK)** — 浏览器里自由勾选因子、调权重和阈值、跑回测、看净值曲线与风控拦截，不需要安装任何东西，也不依赖后端。
 
+📡 同一站点右上角「A 股监控台 ↗」进入 **[A 股盘中监控页](https://quantforge-dashboard.app.workbuddy.host/ashare.html?sharecode=BW7RIDSIEK)** — 人工执行建议单、11 项合规检查、涨跌停/T+1/费用预估与数据质量门禁。**该页当前展示的是明确标注的合成演示快照，不是实时行情，不可用于交易决策**；真实数据接入见 [A 股运行手册](docs/ashare-runbook.md)。
+
 ---
 
 ## ⚠️ 先读这一段
