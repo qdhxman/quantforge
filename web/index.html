@@ -21,6 +21,7 @@
       <span class="badge badge-mode">模拟盘 PAPER</span>
       <span class="badge">合成示例数据</span>
       <span class="badge">v0.1.0</span>
+      <a class="badge badge-link badge-nav" data-keep-query href="ashare.html">A 股监控台 ↗</a>
       <a class="badge badge-link" href="https://github.com/qdhxman/quantforge" target="_blank" rel="noopener">GitHub ↗</a>
     </div>
   </header>
@@ -195,5 +196,17 @@
 <script src="presets.js"></script>
 <script src="engine.js"></script>
 <script src="app.js"></script>
+<script>
+/* Inherit the deploy share token so the A-share page stays reachable online. */
+(function () {
+  var q = window.location.search;
+  if (!q) return;
+  var links = document.querySelectorAll("a[data-keep-query]");
+  for (var i = 0; i < links.length; i++) {
+    var a = links[i], h = a.getAttribute("href") || "";
+    if (h.indexOf("?") === -1 && h.indexOf("#") === -1) a.setAttribute("href", h + q);
+  }
+})();
+</script>
 </body>
 </html>

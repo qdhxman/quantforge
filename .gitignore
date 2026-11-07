@@ -21,3 +21,12 @@ reports/
 *.parquet
 *.feather
 secrets*.json
+
+# A-share path: real market data caches and monitor state must never be committed
+data/ashare_cache/
+data/ashare_synthetic_fixture/
+web/ashare_signals.json
+*.db
+*.sqlite*
+# web/ashare_demo_data.js IS committed: it is a clearly-labelled synthetic
+# baseline snapshot, with no real market data in it.

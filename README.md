@@ -163,6 +163,39 @@ def f_my_factor(bars, i, p):
 
 ---
 
+## A 股路径（`quantforge/ashare/`）
+
+> **当前状态：`PIPELINE_OK_BUT_NOT_READY_FOR_LIVE`。** 链路完整、87 个测试通过，但**不具备接真实资金的条件**。
+> 本轮按「只监控 + 信号 + 人工下单」实现：**系统不生成、不发送任何交易指令**，产出的是人工执行建议单。
+> 缺的是真实行情授权、3 年以上样本外验证与模拟盘连续运行，不是代码。逐条见 [实盘就绪度审计](docs/ashare-readiness-audit.md)。
+
+新增了一条**独立于通用演示内核**的 A 股生产路径，不改动上一版已通过数值一致性校验的代码：
+
+| 模块 | 作用 |
+| --- | --- |
+| `ashare/rules.py` | 板块识别、涨跌停（含 **2026-07-06 主板 ST 由 5% 调为 10%**）、申报数量（**科创板 ≥200 股、1 股递增**）、T+1、真实费用（佣金最低 5 元 / 卖出印花税 0.05% / 双向过户费 0.001%）、交易时段、**权威交易日历门禁**；每个常量挂一手来源与生效日 |
+| `ashare/feeds.py` | `QMT/xtquant` 同源行情适配器（缺依赖明确报错，**绝不退化到模拟数据**）、本地缓存、数据质量门禁（新鲜度 / OHLC / 涨跌停 / 复权 / 双源一致性） |
+| `ashare/engine.py` | 严格回测：涨停买不进、跌停卖不出、停牌、T+1、整手、真实费用；每笔拦截按规则计数；结果内嵌可审计的 `assumptions` |
+| `ashare/validation.py` | IC/IR、分层回测、样本外切分、walk-forward、过拟合诊断、3 年跨度门槛 |
+| `ashare/monitor.py` | 盘中监控：时段感知、质量门禁失败闭合、因子信号、**人工执行建议单**（11 项合规检查）、SQLite + JSONL 审计；源码级禁止下单调用 |
+
+```bash
+python -m unittest discover -s tests -v            # 87 项
+python scripts/ashare_pipeline.py                  # 端到端验收（输入为明确标注的合成 fixture）
+# 打开 web/ashare.html 看人工执行建议单
+
+# 在装有券商 QMT 客户端并登录的 Windows 机器上：
+python examples/ashare_verify_feed.py              # 行情字段自检，必做
+python examples/ashare_monitor.py --once           # 单周期监控
+python examples/ashare_monitor.py --cycles 100     # 连续监控
+```
+
+端到端验收在**随机游走合成数据**上如实给出 `IC=-0.0479`、样本外夏普为负、四道就绪 gate 全 False、`NOT_READY` —— 系统不会把噪声包装成有效策略。这个「难看」的结果正是严谨性的证据。
+
+**合规要点**：A 股散户没有官方开放的交易 API；自动下单需券商 QMT/PTrade 权限，且依《程序化交易管理实施细则》（**2025-07-07 施行**）个人投资者须在首次程序化交易前向券商报告并取得确认。本轮的监控路径不自动下达指令，不触发该义务；若将来改为自动下单，须先完成报告与协议签署。详见 [运行手册](docs/ashare-runbook.md) 与 [就绪度审计](docs/ashare-readiness-audit.md)。
+
+---
+
 ## 测试
 
 ```bash
@@ -187,6 +220,8 @@ CI 会在 Python 3.10 / 3.12 / 3.13 上跑单元测试，并用 Node 校验前�
 | [docs/api.md](docs/api.md) | REST 端点与请求示例 |
 | [docs/live-trading.md](docs/live-trading.md) | 实盘三重闸门、Alpaca 接入、上线前清单 |
 | [docs/disclaimer.md](docs/disclaimer.md) | 风险与免责声明 |
+| [docs/ashare-readiness-audit.md](docs/ashare-readiness-audit.md) | **A 股实盘就绪度审计**：10 条硬伤处置、已知局限、规则一手来源、放行清单 |
+| [docs/ashare-runbook.md](docs/ashare-runbook.md) | **A 股运行手册**：QMT 数据接入、合规清单、盘中监控、故障处理 |
 
 ---
 

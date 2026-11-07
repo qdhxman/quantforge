@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuantForge · A 股盘中监控台</title>
+<style>
+:root{--bg:#f4f6fa;--surface:#fff;--surface2:#f8fafc;--border:#e2e8f0;--text:#16202e;--muted:#8391a5;
+--up:#d92b2b;--down:#0f9d68;--warn:#c26a09;--warnbg:#fff5e6;--blue:#2456d6;--bluebg:#eaf0ff;
+--shadow:0 1px 2px rgba(16,32,56,.04),0 6px 20px rgba(16,32,56,.04)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.topbar{height:70px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 26px;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#2456d6,#5b8bff);color:#fff;display:grid;place-items:center;font-weight:800}
+.brand h1{font-size:17px;margin:0}.brand p{font-size:11.5px;color:var(--muted);margin:2px 0 0}
+.badges{display:flex;gap:7px;flex-wrap:wrap}.badge{font-size:11px;padding:4px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.badge.mode{background:var(--bluebg);color:var(--blue);border-color:#c6d6ff;font-weight:700}
+.badge.synth{background:var(--warnbg);color:var(--warn);border-color:#f4dcb4;font-weight:700}
+.badge.live{background:var(--downbg,#e9f8f1);color:var(--down);border-color:#b9e8d2;font-weight:700}
+.badge.link{text-decoration:none;color:var(--blue);background:var(--bluebg);border-color:#c6d6ff;font-weight:700}
+.badge.link:hover{background:#dbe6ff}
+.wrap{max-width:1320px;margin:0 auto;padding:20px 24px 44px}
+.banner{border-radius:10px;padding:11px 14px;font-size:12px;line-height:1.65;margin-bottom:16px}
+.banner.warn{background:var(--warnbg);border:1px solid #f4dcb4;color:#7a4a08}
+.banner.ok{background:#e9f8f1;border:1px solid #b9e8d2;color:#0b6b48}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
+.kpi span{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}.kpi b{font-size:16px;font-variant-numeric:tabular-nums}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
+.card h2{font-size:15px;margin:0}.sub{font-size:11.5px;color:var(--muted);margin:3px 0 0}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.tickets{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
+.ticket{border:1px solid var(--border);border-radius:11px;padding:14px;background:var(--surface2)}
+.ticket.blocked{border-color:#f0d3b0;background:#fffaf3}
+.t-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px}
+.t-sym{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}.t-name{font-size:11px;color:var(--muted)}
+.pill{padding:2px 9px;border-radius:5px;font-size:11px;font-weight:700}.buy{background:#fdecec;color:var(--up)}.sell{background:#e9f8f1;color:var(--down)}
+.pill.ok{background:#e9f8f1;color:var(--down)}.pill.no{background:var(--warnbg);color:var(--warn)}
+.score{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700}
+.t-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:11px}
+.cell{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 9px}
+.cell span{display:block;font-size:10.5px;color:var(--muted)}.cell b{font-size:13px;font-variant-numeric:tabular-nums}
+.reason{font-size:11px;color:var(--muted);background:var(--surface);border:1px dashed var(--border);border-radius:7px;padding:8px;margin-bottom:10px;line-height:1.5}
+details summary{cursor:pointer;font-size:11.5px;font-weight:600;color:var(--blue);outline:none}
+.checks{margin-top:8px}.check{display:flex;gap:7px;align-items:flex-start;padding:4px 0;border-bottom:1px dashed #e9eef5;font-size:11px}
+.check:last-child{border-bottom:none}.mark{width:15px;height:15px;border-radius:50%;color:#fff;display:grid;place-items:center;font-size:9px;flex:none}
+.mark.ok{background:var(--down)}.mark.no{background:var(--up)}.check b{min-width:104px}.check em{color:var(--muted);font-style:normal}
+.notes{font-size:10.5px;color:var(--muted);margin-top:9px;line-height:1.5}
+.table{width:100%;border-collapse:collapse;font-size:12px}.table th{text-align:left;background:var(--surface2);padding:9px 10px;border-bottom:1px solid var(--border);color:var(--muted);font-weight:600}
+.table td{padding:8px 10px;border-bottom:1px solid #f0f3f8}.num{font-variant-numeric:tabular-nums}
+.up{color:var(--up)}.down{color:var(--down)}.muted{color:var(--muted)}
+.footer{font-size:11.5px;color:var(--muted);line-height:1.9;padding-top:12px;border-top:1px dashed var(--border)}
+.footer a{color:var(--blue);text-decoration:none}.footer a:hover{text-decoration:underline}
+@media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}.tickets{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><div class="logo">QF</div><div><h1>QuantForge · A 股盘中监控台</h1><p>盘中监控 · 因子信号 · 人工执行建议单 · 零自动下单</p></div></div>
+  <div class="badges"><span class="badge mode" id="modeBadge">MONITOR ONLY</span><span class="badge" id="dataBadge">加载中</span><span class="badge" id="feedBadge">—</span><a class="badge link" data-keep-query href="index.html">← 通用决策台</a><a class="badge link" href="https://github.com/qdhxman/quantforge" target="_blank" rel="noopener">GitHub ↗</a></div>
+</div>
+<div class="wrap">
+  <div class="banner warn" id="banner">正在读取监控快照…</div>
+  <section class="kpis" id="kpis"></section>
+  <section class="card">
+    <div class="head"><div><h2>人工执行建议单</h2><p class="sub">系统只生成决策依据，不发送任何交易指令；执行前请在券商客户端复核价格、可用持仓与板块权限</p></div><span class="sub" id="ticketCount"></span></div>
+    <div class="tickets" id="tickets"></div>
+  </section>
+  <section class="card">
+    <div class="head"><div><h2>本周期全部信号与数据质量</h2><p class="sub" id="qualityLine"></p></div></div>
+    <table class="table"><thead><tr><th>标的</th><th>方向</th><th>综合得分</th><th>目标仓位</th><th>判定依据</th></tr></thead><tbody id="signals"></tbody></table>
+  </section>
+  <div class="footer">
+    规则一手来源：<a href="https://www.szse.cn/lawrules/rule/trade/t20250403_612770.html" target="_blank" rel="noopener">深交所《程序化交易管理实施细则》</a> ·
+    <a href="https://one.sse.com.cn/onething/gptz" target="_blank" rel="noopener">上交所「股票投资一件事」（费用）</a> ·
+    <a href="https://www.sse.com.cn/star/en/gettingstarted/features/trading/" target="_blank" rel="noopener">上交所科创板交易机制</a> ·
+    <a href="https://www.sse.com.cn/services/tradingservice/charge/ssecharge/" target="_blank" rel="noopener">上交所收费一览表</a> ·
+    主板 ST 涨跌幅 5%→10% 由沪深北《交易规则(2026 年修订)》规定，<a href="https://news.cctv.cn/2026/07/06/ARTIJUkfhAGrSpiQqDrUizkG260706.shtml" target="_blank" rel="noopener">央视网报道为非一手交叉印证，需核实规则原文</a>（2026-07-06 施行）。<br />
+    <strong>免责声明</strong>：以上内容基于公开数据和量化分析，仅供参考，不构成投资建议。市场有风险，投资需谨慎。任何投资决策应结合个人风险承受能力、资金状况和投资目标独立判断，必要时咨询持牌专业机构。过往表现不预示未来收益。
+  </div>
+</div>
+<script src="ashare_demo_data.js"></script>
+<script src="ashare.js"></script>
+<script>
+/* Inherit the deploy share token so navigation back to the main dashboard works. */
+(function () {
+  var q = window.location.search;
+  if (!q) return;
+  var links = document.querySelectorAll("a[data-keep-query]");
+  for (var i = 0; i < links.length; i++) {
+    var a = links[i], h = a.getAttribute("href") || "";
+    if (h.indexOf("?") === -1 && h.indexOf("#") === -1) a.setAttribute("href", h + q);
+  }
+})();
+</script>
+</body>
+</html>

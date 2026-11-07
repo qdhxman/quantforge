@@ -50,6 +50,8 @@ a { color: var(--primary); }
 }
 .badge-mode { color: #0b6b48; background: var(--down-soft); border-color: #b9e8d2; font-weight: 600; }
 .badge-link { text-decoration: none; }
+.badge-nav { color: #2456d6; background: #eaf0ff; border-color: #c6d6ff; font-weight: 700; }
+.badge-nav:hover { background: #dbe6ff; }
 
 .layout { display: grid; grid-template-columns: 306px minmax(0, 1fr); align-items: start; }
 .sidebar {
